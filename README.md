@@ -31,30 +31,30 @@ COMANDOS DE INSTALACIÓN PARA CADA MÉTODO
 Instala Ansible globalmente en tu entorno de usuario de Python.
 
 ```bash
-python3 -m pip install --user ansible
+      python3 -m pip install --user ansible
 ```
 3. PIPX (AISLADO)
 Recomendado si quieres evitar que Ansible interfiera con otras herramientas de Python en tu sistema.
 
 ```bash
-brew install pipx
-pipx ensurepath
-pipx install ansible
+      brew install pipx
+      pipx ensurepath
+      pipx install ansible
 ```
 4. ENTORNO VIRTUAL (PARA DESARROLLADORES)
 
     Perfecto si necesitas probar diferentes versiones de Ansible sin que afecten al resto del sistema.
 
 ```bash
-python3 -m venv ansible-env
-source ansible-env/bin/activate
-pip install ansible
+      python3 -m venv ansible-env
+      source ansible-env/bin/activate
+      pip install ansible
 ```
 5. MACPORTS
 
    Si prefieres MacPorts sobre Homebrew, puedes usar:
 ```bash
-sudo port install ansible
+      sudo port install ansible
 ```
 
 > Nota: Independientemente del método que elijas, puedes verificar que la instalación ha sido correcta ejecutando `ansible --version` en tu terminal.
