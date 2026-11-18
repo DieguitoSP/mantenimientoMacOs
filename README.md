@@ -59,6 +59,10 @@ sudo port install ansible
 
 > Nota: Independientemente del método que elijas, puedes verificar que la instalación ha sido correcta ejecutando `ansible --version` en tu terminal.
 
+### Playbooks:
+    
+    intelapps.yaml
+
 🍎 macOS Intel (x86_64) App & Daemon Detector
 Este playbook de Ansible está diseñado para usuarios de macOS con Apple Silicon (M1/M2/M3/M4). Su objetivo es detectar qué aplicaciones y procesos en segundo plano (daemons) aún dependen exclusivamente de la arquitectura Intel (x86_64) y requieren Rosetta 2 para funcionar.
 
