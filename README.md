@@ -31,33 +31,37 @@ COMANDOS DE INSTALACIÓN PARA CADA MÉTODO
 Instala Ansible globalmente en tu entorno de usuario de Python.
 
 ```bash
-python3 -m pip install --user ansible
+      python3 -m pip install --user ansible
 ```
 3. PIPX (AISLADO)
 Recomendado si quieres evitar que Ansible interfiera con otras herramientas de Python en tu sistema.
 
 ```bash
-brew install pipx
-pipx ensurepath
-pipx install ansible
+      brew install pipx
+      pipx ensurepath
+      pipx install ansible
 ```
 4. ENTORNO VIRTUAL (PARA DESARROLLADORES)
 
     Perfecto si necesitas probar diferentes versiones de Ansible sin que afecten al resto del sistema.
 
 ```bash
-python3 -m venv ansible-env
-source ansible-env/bin/activate
-pip install ansible
+      python3 -m venv ansible-env
+      source ansible-env/bin/activate
+      pip install ansible
 ```
 5. MACPORTS
 
    Si prefieres MacPorts sobre Homebrew, puedes usar:
 ```bash
-sudo port install ansible
+      sudo port install ansible
 ```
 
 > Nota: Independientemente del método que elijas, puedes verificar que la instalación ha sido correcta ejecutando `ansible --version` en tu terminal.
+
+### Playbooks:
+    
+    intelapps.yaml
 
 🍎 macOS Intel (x86_64) App & Daemon Detector
 Este playbook de Ansible está diseñado para usuarios de macOS con Apple Silicon (M1/M2/M3/M4). Su objetivo es detectar qué aplicaciones y procesos en segundo plano (daemons) aún dependen exclusivamente de la arquitectura Intel (x86_64) y requieren Rosetta 2 para funcionar.
