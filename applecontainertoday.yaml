@@ -1,0 +1,45 @@
+- name: Instalar y configurar Apple Container en macOS
+  hosts: localhost
+  gather_facts: no
+  vars:
+    ansible_connection: local
+    ansible_user: "{{ lookup('env', 'USER') }}"
+    ansible_remote_tmp: /tmp/ansible-tmp
+
+  tasks:
+    - name: Obtener datos de la última versión desde GitHub
+      ansible.builtin.command: >
+        python3 -c "import urllib.request, json, base64;
+        url = base64.b64decode('aHR0cHM6Ly9hcGkuZ2l0aHViLmNvbS9yZXBvcy9hcHBsZS9jb250YWluZXIvcmVsZWFzZXMvbGF0ZXN0').decode('utf-8');
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'});
+        data = json.loads(urllib.request.urlopen(req).read());
+        pkg_url = next((a['browser_download_url'] for a in data['assets'] if a['name'].endswith('.pkg')), '');
+        print(json.dumps({'tag': data['tag_name'], 'pkg_url': pkg_url}))"
+      register: github_data
+
+    - name: Procesar datos de la versión
+      ansible.builtin.set_fact:
+        latest_version: "{{ (github_data.stdout | from_json).tag }}"
+        pkg_download_url: "{{ (github_data.stdout | from_json).pkg_url }}"
+
+    - name: Comprobar versión instalada actualmente
+      ansible.builtin.command: container --version
+      register: current_version
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Descargar instalador si no está instalado o está desactualizado
+      ansible.builtin.command: >
+        python3 -c "import urllib.request;
+        urllib.request.urlretrieve('{{ pkg_download_url }}', '/tmp/container.pkg')"
+      when: current_version.rc != 0 or latest_version not in current_version.stdout
+
+    - name: Instalar o actualizar Apple Container
+      become: yes
+      ansible.builtin.command: installer -pkg /tmp/container.pkg -target /
+      when: current_version.rc != 0 or latest_version not in current_version.stdout
+
+    - name: Asegurar que el servicio está iniciado
+      ansible.builtin.command: container system start
+      register: system_start
+      changed_when: "'started' in system_start.stdout or 'already running' not in system_start.stderr"

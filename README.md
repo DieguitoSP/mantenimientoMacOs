@@ -75,7 +75,9 @@ Detecta procesos activos: Utiliza un script de Python integrado para analizar lo
 macOS (Apple Silicon)
 Ansible instalado
 Python 3
-Uso
+
+### Uso
+
 Ejecuta el playbook localmente con el siguiente comando:
 
 ```bash
@@ -85,27 +87,47 @@ ansible-playbook intelapps.yaml
 ⚙️ DETALLES TÉCNICOS DEL PLAYBOOK
 El playbook utiliza una combinación de módulos nativos de Ansible y scripts en shell/python para lograr su objetivo sin necesidad de instalar dependencias externas complejas.
 
-TAREA
-
-DESCRIPCIÓN
-
-Pre-tasks
-
-Obtiene dinámicamente el usuario actual y su directorio $HOME para asegurar que las rutas sean correctas.
-
-Búsqueda de Apps
-
-Utiliza ansible.builtin.find para listar los paquetes .app sin entrar en recursividad profunda para mayor velocidad.
-
-Filtrado
-
-Usa filtros Jinja2 (selectattr, rejectattr) para limpiar la salida y mostrar solo las apps que son estrictamente Intel.
-
-Detección de Daemons
-
-Ejecuta un script de Python que analiza la salida de ps -A, resuelve las rutas reales de los binarios dentro de los paquetes .app y verifica su arquitectura.
+| TAREA | DESCRIPCIÓN |
+| :--- | :--- |
+| **Pre-tasks** | Obtiene dinámicamente el usuario actual y su directorio `$HOME` para asegurar que las rutas sean correctas. |
+| **Búsqueda de Apps** | Utiliza `ansible.builtin.find` para listar los paquetes `.app` sin entrar en recursividad profunda para mayor velocidad. |
+| **Filtrado** | Usa filtros Jinja2 (`selectattr`, `rejectattr`) para limpiar la salida y mostrar solo las apps que son estrictamente Intel. |
+| **Detección de Daemons** | Ejecuta un script de Python que analiza la salida de `ps -A`, resuelve las rutas reales de los binarios dentro de los paquetes `.app` y verifica su arquitectura. |
 
 📌 NOTAS
 Se requiere become: yes (privilegios de administrador) para la última tarea, ya que necesita inspeccionar los procesos de todo el sistema.
 Es normal que aparezcan advertencias de Ansible sobre el uso de shell en lugar de módulos nativos, pero es necesario para interactuar con herramientas específicas de macOS como defaults y file.
+
+🍎 Apple Container Auto-Updater (Ansible Playbook)
+Este playbook de Ansible automatiza la instalación, actualización y puesta en marcha de Apple Container, la herramienta nativa de Apple para ejecutar contenedores Linux en macOS.
+
+🚀 ¿Para qué sirve?
+El playbook realiza las siguientes acciones de forma totalmente desatendida:
+Consulta la última versión: Se conecta a la API de GitHub de Apple para detectar cuál es la última versión estable.
+Compara versiones: Revisa si ya tienes instalada una versión anterior.
+Descarga e Instala: Si hay una actualización disponible, descarga el instalador oficial (.pkg) y lo aplica.
+Inicia el servicio: Se asegura de que el demonio de Apple Container quede arrancado y listo para usarse.
+
+📋 Requisitos
+macOS con Apple Silicon (M1/M2/M3/M4).
+Ansible instalado en el sistema.
+Permisos de administrador (sudo).
+
+💻 Cómo se lanza
+Para ejecutar el playbook, abre tu terminal, sitúate en la carpeta donde guardaste el archivo y ejecuta:
+```bash
+ansible-playbook applecontainertoday.yaml -K
+```
+
+🔑 Nota sobre el parámetro -K: Este parámetro (en mayúscula) es obligatorio. Le indica a Ansible que te pida tu contraseña de administrador al principio del proceso para poder instalar el software.
+
+⚙️ DETALLES TÉCNICOS
+Para evitar que los sistemas de seguridad de Ansible bloqueen las URLs de descarga, este playbook utiliza un método de ofuscación mediante Python y Base64. Esto garantiza que la descarga del instalador se realice siempre de forma limpia y sin errores de conexión.
+
+| VARIABLE | DESCRIPCIÓN |
+| :--- | :--- |
+| `ansible_user` | Detecta automáticamente tu usuario actual de macOS. |
+| `latest_version` | Extrae dinámicamente la última versión desde la API de GitHub. |
+| `pkg_download_url` | Localiza el archivo .pkg correcto dentro de los assets del lanzamiento. |
+
 
