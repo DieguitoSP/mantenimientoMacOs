@@ -1,0 +1,104 @@
+---
+- name: Detectar aplicaciones y daemons Intel (x86_64) en macOS
+  hosts: localhost
+  gather_facts: no
+  vars:
+    ansible_connection: local
+    ansible_user: "{{ lookup('env', 'USER') }}"
+    ansible_remote_tmp: /tmp/ansible-tmp
+
+  pre_tasks:
+    - name: Obtener datos del usuario actual
+      ansible.builtin.command: whoami
+      register: current_user
+      changed_when: false
+
+    - name: Obtener el directorio HOME del usuario
+      ansible.builtin.command: echo $HOME
+      register: user_home
+      changed_when: false
+
+  tasks:
+    - name: Buscar aplicaciones en /Applications y ~/Applications
+      ansible.builtin.find:
+        paths:
+          - /Applications
+          - "{{ user_home.stdout }}/Applications"
+        patterns: "*.app"
+        recurse: no
+        file_type: directory
+      register: apps_found
+
+    - name: Comprobar arquitectura de las aplicaciones
+      ansible.builtin.shell: |
+        APP_PATH="{{ item.path }}"
+        EXEC_NAME=$(defaults read "$APP_PATH/Contents/Info.plist" CFBundleExecutable 2>/dev/null)
+        if [ -f "$APP_PATH/Contents/MacOS/$EXEC_NAME" ]; then
+          file "$APP_PATH/Contents/MacOS/$EXEC_NAME"
+        fi
+      loop: "{{ apps_found.files }}"
+      register: app_architectures
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Filtrar aplicaciones que solo son Intel (x86_64)
+      ansible.builtin.set_fact:
+        intel_only_apps: >
+          {{
+            app_architectures.results
+            | selectattr('stdout', 'defined')
+            | selectattr('stdout', 'search', 'x86_64')
+            | rejectattr('stdout', 'search', 'arm64')
+            | map(attribute='item.path')
+            | list
+          }}
+
+    - name: Mostrar aplicaciones Intel detectadas
+      ansible.builtin.debug:
+        msg:
+          - "Las siguientes aplicaciones son solo para Intel y podrían dejar de funcionar sin Rosetta:"
+          - "{{ intel_only_apps }}"
+    
+    - name: Detectar daemons y procesos x86_64 (Resuelve paquetes .app)
+      become: yes
+      ansible.builtin.shell: |
+        python3 -c "
+        import subprocess
+        import os
+
+        def get_arch(path):
+            try:
+                out = subprocess.check_output(['file', path], stderr=subprocess.DEVNULL).decode('utf-8')
+                if 'x86_64' in out and 'arm64' not in out:
+                    return True
+            except:
+                pass
+            return False
+
+        try:
+            out = subprocess.check_output(['ps', '-A', '-o', 'command']).decode('utf-8')
+            for line in out.splitlines()[1:]:
+                comm = line.strip().split(' -')[0].split(' --')[0]
+                
+                # Si la ruta contiene .app, buscamos el binario real dentro
+                if '.app' in comm:
+                    base_app = comm.split('.app')[0] + '.app'
+                    plist_path = os.path.join(base_app, 'Contents', 'Info.plist')
+                    try:
+                        exec_name = subprocess.check_output(['defaults', 'read', plist_path, 'CFBundleExecutable'], stderr=subprocess.DEVNULL).decode('utf-8').strip()
+                        comm = os.path.join(base_app, 'Contents', 'MacOS', exec_name)
+                    except:
+                        pass
+
+                if os.path.exists(comm) and get_arch(comm):
+                    print(comm)
+        except Exception as e:
+            pass
+        "
+      register: running_intel_processes
+      ignore_errors: yes
+      changed_when: false
+
+    - name: Mostrar procesos Intel en ejecución
+      ansible.builtin.debug:
+        msg: "{{ running_intel_processes.stdout_lines | unique }}"
